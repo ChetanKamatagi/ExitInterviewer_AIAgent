@@ -1,0 +1,15 @@
+[project]
+name = "aiinterviewer"
+version = "0.1.0"
+description = "An Agentic AI system that conducts automated exit interviews with voice I/O and generates HR executive summaries"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "groq>=1.1.1",
+    "gtts>=2.5.4",
+    "pyaudio>=0.2.14",
+    "pygame>=2.6.1",
+    "speechrecognition>=3.15.1",
+    "streamlit>=1.55.0",
+]

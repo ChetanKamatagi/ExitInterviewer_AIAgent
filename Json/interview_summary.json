@@ -1,0 +1,22 @@
+{
+    "employee_name": "robot",
+    "employee_id": "123",
+    "summary": {
+        "primary_reason_for_leaving": "The primary reason for leaving is the toxic behavior of the manager, including lack of support and partiality among teammates, leading to an excessive workload.",
+        "key_positives": [
+            "awesome work culture",
+            "good pay scale",
+            "supportive teammates",
+            "great platform for beginners",
+            "new and exciting projects",
+            "learning environment"
+        ],
+        "areas_for_improvement": [
+            "manager's behavior and support",
+            "transparency in promotions",
+            "workload distribution among teammates",
+            "feedback systems between managers, teammates, and HR"
+        ],
+        "overall_sentiment": "Mixed, with the employee having a positive experience with the company culture, teammates, and pay scale, but a negative experience with their manager, leading to their decision to leave."
+    }
+}
