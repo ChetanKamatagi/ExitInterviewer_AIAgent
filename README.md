@@ -1,6 +1,10 @@
 # 🎤 AI Exit Interviewer — Agentic AI System
 
-An autonomous AI-powered exit interview agent that conducts structured conversations with departing employees, asks intelligent follow-up questions, and generates HR executive summaries — all powered by lightning-fast LLMs with voice I/O.
+An autonomous AI-powered exit interview agent that conducts structured conversations with departing employees, asks intelligent follow-up questions, and generates HR executive summaries, all powered by lightning-fast LLMs with voice I/O.
+
+---
+
+### Demo - https://exitintervieweraiagent.streamlit.app/
 
 ---
 
@@ -26,9 +30,9 @@ AIInterviewer/
 
 ### Design Decisions
 
-- **No Framework Overhead:** Instead of relying on heavy frameworks like LangChain or CrewAI, the agent is built with a clean, modular architecture using direct Groq API calls. This provides absolute control over the conversation flow, reduces latency, and avoids unnecessary abstraction layers.
-- **Separation of Concerns:** Audio processing (STT/TTS), LLM intelligence (conversation/summarization), and application orchestration (`main.py`/`app.py`) are fully decoupled into independent, error-proofed modules.
-- **Model Fallback System:** If the primary LLM hits a rate limit or token exhaustion, the system automatically falls back through a configurable list of backup models to ensure the interview never crashes.
+- I decided to build the agent using the Groq API directly instead of relying on heavy frameworks like LangChain or CrewAI. Doing this gave me absolute control over the conversation logic, kept the codebase lightweight, and minimized latency which is absolutely critical for a seamless voice AI experience.
+- I designed the architecture to be clean and modular. I completely separated the audio processing (STT/TTS), the AI brain (conversation and summarization), and the main application loop into their own independent files. This makes the project much easier to debug, maintain, and scale.
+- To ensure the interview never crashes mid-conversation, I built an automatic fallback system. If the primary AI model hits a rate limit or fails to respond, my code instantly switches to a list of backup models so the user's experience is never interrupted.
 
 ---
 
@@ -59,7 +63,7 @@ AIInterviewer/
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/your-username/AIInterviewer.git
+   git clone https://github.com/ChetanKamatagi/ExitInterviewer_AIAgent.git
    cd AIInterviewer
    ```
 
@@ -74,6 +78,7 @@ AIInterviewer/
 Create a `.env` file in the root directory of your project and add your specific configurations:
 
 ```env
+GEMINI_API_KEY=your_gemini_api_key_here
 GROQ_API_KEY=your_groq_api_key_here
 PRIMARY_MODEL=llama-3.3-70b-versatile
 FALLBACK_MODELS=llama-3.1-8b-instant,mixtral-8x7b-32768,gemma2-9b-it
