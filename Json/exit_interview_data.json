@@ -1,38 +1,26 @@
 {
-    "employee_name": "robot",
-    "employee_id": "123",
-    "responses": {
-        "What is the primary reason for leaving the organization?": {
-            "primary_response": "due to my manager is very toxic so I need to move",
-            "follow_up_qa": [
-                {
-                    "ai_question": "Can you elaborate on what you mean by \"toxic\" in terms of your manager's behavior, so we can better understand your experience?",
-                    "user_answer": "toxic in terms of the answer non supportive partial doing the partiality between the teammates"
-                },
-                {
-                    "ai_question": "Can you please elaborate on what you mean by \"toxic\" and \"partiality\" in the team, and how it affected your decision to leave the organization?",
-                    "user_answer": "YouTube partially and what we say toxic nature of its all the work has assigned to me and I have to work for the days and nights to be the deadlines and the complete the project"
-                }
-            ]
-        },
-        "How would you describe your overall experience with the company?": {
-            "primary_response": "overall experience with the company is awesome work culture the teammates the pay scale was very good",
-            "follow_up_qa": []
-        },
-        "What did you like most about working here?": {
-            "primary_response": "the coffee machine the coffee day coffee breaks enjoyed a lot",
-            "follow_up_qa": []
-        },
-        "What could the company improve?": {
-            "primary_response": "Tumhen Canada place for employee is the company should work on its pay scale the and transparency in the promotions having the workload distributed the workload among the teammates it should be a feedback systems between the managers the teammates and the HR",
-            "follow_up_qa": []
-        },
-        "How was your relationship with your manager and team?": {
-            "status": "Answered previously in conversation"
-        },
-        "Would you recommend this company to others? Why or why not?": {
-            "primary_response": "yes I would recommend this company to other since this is a great platform this company gives a great platform for the beginners with new and exciting projects the learning environment the supportive teammates yeah that's all",
-            "follow_up_qa": []
-        }
+    "What is the primary reason for leaving the organization?": {
+        "primary_response": "I got better pay else",
+        "follow_up_qa": []
+    },
+    "How would you describe your overall experience with the company?": {
+        "primary_response": "my overall experience with the company was very nice the work cultural I like it the most and the projects with the companies handling a very nice",
+        "follow_up_qa": []
+    },
+    "What did you like most about working here?": {
+        "primary_response": "I like the coffee machine and the coffee breaks with my teammates",
+        "follow_up_qa": []
+    },
+    "What could the company improve?": {
+        "primary_response": "how to satisfy the current and future employees they should increase the pay and the learning opportunities the trainings given to them should be increase",
+        "follow_up_qa": []
+    },
+    "How was your relationship with your manager and team?": {
+        "primary_response": "my relationship with my manager and the team was very well my manager is very supportive the teammates were help me during my project deadlines overall it's good",
+        "follow_up_qa": []
+    },
+    "Would you recommend this company to others? Why or why not?": {
+        "primary_response": "yes I would recommend this company to others it's very good company to start the career the learning opportunities are here are very well the Technologies the company uses is very nice",
+        "follow_up_qa": []
     }
 }

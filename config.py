@@ -14,6 +14,10 @@ class Config:
     fallback_str = os.environ.get("FALLBACK_MODELS", "")
     FALLBACK_MODELS = [m.strip() for m in fallback_str.split(",") if m.strip()]
 
+    TEMP_DEFAULT = 0.7
+    TEMP_STRICT = 0.2
+    TEMP_DETERMINISTIC = 0.0
+
     # STT Config
     STT_PAUSE_THRESHOLD = 2.5
     STT_TIMEOUT = 10

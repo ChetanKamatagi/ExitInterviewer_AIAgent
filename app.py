@@ -1,21 +1,21 @@
 import streamlit as st
 import json
 import os
+import time
 import base64
 import speech_recognition as sr
 from gtts import gTTS
 from config import config
 from llm.conversation import GroqConversationService
 from llm.summarizer import GroqSummaryService
+from audio_recorder_streamlit import audio_recorder 
 
-# ─── Page Config ───
 st.set_page_config(
     page_title="AI Exit Interviewer",
     page_icon="🎤",
     layout="centered"
 )
 
-# ─── Custom CSS ───
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -26,7 +26,6 @@ st.markdown("""
         background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     }
     
-    /* Landing page card */
     .landing-card {
         background: rgba(255,255,255,0.06);
         backdrop-filter: blur(20px);
@@ -53,7 +52,6 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     
-    /* Chat bubbles */
     .agent-bubble {
         background: linear-gradient(135deg, rgba(102,126,234,0.25), rgba(118,75,162,0.25));
         border: 1px solid rgba(102,126,234,0.3);
@@ -90,7 +88,6 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
     
-    /* Progress bar */
     .progress-container {
         background: rgba(255,255,255,0.08);
         border-radius: 10px;
@@ -98,6 +95,7 @@ st.markdown("""
         margin: 1rem 0 1.5rem 0;
         overflow: hidden;
     }
+    
     .progress-fill {
         background: linear-gradient(90deg, #667eea, #764ba2);
         height: 100%;
@@ -105,7 +103,6 @@ st.markdown("""
         transition: width 0.5s ease;
     }
     
-    /* Status badge */
     .status-badge {
         display: inline-block;
         background: rgba(102,126,234,0.2);
@@ -118,7 +115,6 @@ st.markdown("""
         margin-bottom: 1rem;
     }
 
-    /* Summary card */
     .summary-card {
         background: rgba(255,255,255,0.06);
         backdrop-filter: blur(20px);
@@ -128,22 +124,19 @@ st.markdown("""
         margin: 1rem 0;
         color: #e0e0e0;
     }
+    
     .summary-card h4 {
         color: #667eea;
         margin-bottom: 0.5rem;
     }
 
-    /* Hide streamlit defaults */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display: none;}
-    
     div[data-testid="stStatusWidget"] { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# ─── Session State Initialization ───
 def init_session():
     defaults = {
         "page": "landing",
@@ -156,7 +149,7 @@ def init_session():
         "follow_ups": [],
         "follow_up_count": 0,
         "current_context": "",
-        "phase": "ask_question",  # ask_question | waiting_response | follow_up | done
+        "phase": "ask_question", 
         "conversation_service": None,
         "summary_service": None,
         "base_questions": [
@@ -177,9 +170,7 @@ def init_session():
 
 init_session()
 
-# ─── Helper: TTS to autoplay HTML ───
 def generate_tts_autoplay(text):
-    """Generate gTTS audio and return an autoplay HTML audio element."""
     tts = gTTS(text=text, lang=config.TTS_LANG, tld=config.TTS_TLD)
     tts.save("speech.mp3")
     with open("speech.mp3", "rb") as f:
@@ -187,39 +178,24 @@ def generate_tts_autoplay(text):
     b64 = base64.b64encode(audio_bytes).decode()
     return f'<audio autoplay><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
 
-
-# ─── Helper: Record from mic (STT) ───
-def record_from_mic():
-    """Record audio from the local microphone and transcribe via Google STT."""
+def transcribe_audio_file(file_path):
     recognizer = sr.Recognizer()
-    recognizer.pause_threshold = config.STT_PAUSE_THRESHOLD
-    mic = sr.Microphone()
-    
-    with mic as source:
-        recognizer.adjust_for_ambient_noise(source, duration=0.5)
-        try:
-            audio = recognizer.listen(source, timeout=config.STT_TIMEOUT, phrase_time_limit=config.STT_PHRASE_TIME_LIMIT)
-        except sr.WaitTimeoutError:
-            return None
-    
+    with sr.AudioFile(file_path) as source:
+        recognizer.adjust_for_ambient_noise(source, duration=0.2)
+        audio = recognizer.record(source)
     try:
-        text = recognizer.recognize_google(audio)
-        return text
+        return recognizer.recognize_google(audio)
     except (sr.UnknownValueError, sr.RequestError):
         return None
 
-
-# ─── Helper: Save JSON files ───
 def save_interview_data(interview_data, emp_name, emp_id):
     json_dir = os.path.join(os.path.dirname(__file__), "Json")
     os.makedirs(json_dir, exist_ok=True)
-    
     data_with_meta = {
         "employee_name": emp_name,
         "employee_id": emp_id,
         "responses": interview_data
     }
-    
     filepath = os.path.join(json_dir, "exit_interview_data.json")
     with open(filepath, "w") as f:
         json.dump(data_with_meta, f, indent=4)
@@ -228,25 +204,18 @@ def save_interview_data(interview_data, emp_name, emp_id):
 def save_summary(summary_json, emp_name, emp_id):
     json_dir = os.path.join(os.path.dirname(__file__), "Json")
     os.makedirs(json_dir, exist_ok=True)
-    
     summary_with_meta = {
         "employee_name": emp_name,
         "employee_id": emp_id,
         "summary": summary_json
     }
-    
     filepath = os.path.join(json_dir, "interview_summary.json")
     with open(filepath, "w") as f:
         json.dump(summary_with_meta, f, indent=4)
     return filepath
 
-
-# ═══════════════════════════════════════════
-#              PAGE 1: LANDING
-# ═══════════════════════════════════════════
 def landing_page():
     st.markdown("<div style='height: 4rem'></div>", unsafe_allow_html=True)
-    
     st.markdown("""
     <div class="landing-card">
         <div class="landing-title">🎤 AI Exit Interviewer</div>
@@ -258,7 +227,6 @@ def landing_page():
     with col2:
         emp_name = st.text_input("👤 Employee Name", placeholder="Enter your full name")
         emp_id = st.text_input("🆔 Employee ID", placeholder="Enter your employee ID")
-        
         st.markdown("<div style='height: 1rem'></div>", unsafe_allow_html=True)
         
         if st.button("🚀 Begin Interview", use_container_width=True, type="primary"):
@@ -266,30 +234,21 @@ def landing_page():
                 st.session_state.emp_name = emp_name.strip()
                 st.session_state.emp_id = emp_id.strip()
                 st.session_state.page = "interview"
-                
-                # Initialize LLM services
                 st.session_state.conversation_service = GroqConversationService()
                 st.session_state.summary_service = GroqSummaryService()
                 
-                # Add intro message
-                intro = "Hello! Thank you for taking the time for this exit interview. I want this to be a safe space to share your thoughts."
+                intro = "Welcome to the Exit Interview."
                 st.session_state.chat_history.append({"role": "agent", "content": intro})
-                st.session_state.audio_autoplay = generate_tts_autoplay(intro)
-                
+                # st.session_state.audio_autoplay = generate_tts_autoplay(intro)
                 st.rerun()
             else:
                 st.error("Please fill in both fields to continue.")
 
-
-# ═══════════════════════════════════════════
-#           PAGE 2: INTERVIEW
-# ═══════════════════════════════════════════
 def interview_page():
     ss = st.session_state
     conv = ss.conversation_service
     total_q = len(ss.base_questions)
     
-    # ─── Header ───
     st.markdown(f"""
     <div style="text-align:center; margin-bottom:0.5rem;">
         <div class="status-badge">Interview in Progress</div>
@@ -302,7 +261,6 @@ def interview_page():
     with col2:
         st.markdown(f"<p style='color:rgba(255,255,255,0.5); font-size:0.85rem; text-align:right;'>🆔 {ss.emp_id}</p>", unsafe_allow_html=True)
     
-    # Progress
     progress = min(ss.current_question_index / total_q, 1.0)
     st.markdown(f"""
     <div class="progress-container">
@@ -310,7 +268,6 @@ def interview_page():
     </div>
     """, unsafe_allow_html=True)
     
-    # ─── Chat History ───
     for msg in ss.chat_history:
         if msg["role"] == "agent":
             st.markdown(f'<div class="agent-bubble">🤖 {msg["content"]}</div>', unsafe_allow_html=True)
@@ -319,29 +276,23 @@ def interview_page():
         elif msg["role"] == "system":
             st.markdown(f'<div class="system-msg">{msg["content"]}</div>', unsafe_allow_html=True)
     
-    # ─── Autoplay audio ───
     if ss.audio_autoplay:
         st.markdown(ss.audio_autoplay, unsafe_allow_html=True)
         ss.audio_autoplay = None
     
-    # ─── Interview complete → show summary ───
     if ss.interview_complete:
+        st.balloons()
         show_summary_page()
         return
     
-    # ─── Ask the current question if phase is ask_question ───
     if ss.phase == "ask_question":
         if ss.current_question_index >= total_q:
-            # All questions done → generate sign-off
             with st.spinner("Agent is wrapping up..."):
                 final_msg = conv.generate_sign_off()
             ss.chat_history.append({"role": "agent", "content": final_msg})
             ss.audio_autoplay = generate_tts_autoplay(final_msg)
             
-            # Save data
             save_interview_data(ss.interview_data, ss.emp_name, ss.emp_id)
-            
-            # Generate summary
             with st.spinner("Compiling HR Report..."):
                 ss.summary_json = ss.summary_service.generate_summary(ss.interview_data)
             if ss.summary_json:
@@ -354,7 +305,6 @@ def interview_page():
         
         current_q = ss.base_questions[ss.current_question_index]
         
-        # Skip logic
         if ss.interview_data:
             try:
                 if conv.should_skip_question(ss.interview_data, current_q):
@@ -365,9 +315,9 @@ def interview_page():
             except Exception:
                 pass
         
-        # Generate agent speech
         if ss.current_question_index == 0:
-            agent_speech = current_q
+            intro = "Hello! Thank you for taking the time for this exit interview. I want this to be a safe space to share your thoughts."
+            agent_speech = f"{intro} {current_q}"
         else:
             with st.spinner("Agent is thinking..."):
                 agent_speech = conv.generate_transition(ss.last_user_response, current_q)
@@ -380,9 +330,7 @@ def interview_page():
         st.rerun()
         return
     
-    # ─── Waiting for user response ───
     if ss.phase in ["waiting_response", "follow_up"]:
-        # Dual input: text box + mic button
         input_col, mic_col = st.columns([5, 1])
         
         with input_col:
@@ -390,16 +338,28 @@ def interview_page():
         
         with mic_col:
             st.markdown("<div style='height: 0.5rem'></div>", unsafe_allow_html=True)
-            mic_clicked = st.button("🎤", key="mic_btn", use_container_width=True, help="Click to speak")
-        
-        # Handle mic input
-        if mic_clicked:
-            with st.spinner("🎤 Listening... Speak now!"):
-                voice_text = record_from_mic()
+            audio_bytes = audio_recorder(
+                text="", 
+                icon_size="2x", 
+                key=f"recorder_{ss.current_question_index}_{ss.follow_up_count}"
+            )
+            
+        if audio_bytes:
+            temp_file = "temp_user_response.wav"
+            with open(temp_file, "wb") as f:
+                f.write(audio_bytes)
+                
+            with st.spinner("Processing voice..."):
+                voice_text = transcribe_audio_file(temp_file)
+                
             if voice_text:
                 user_input = voice_text
             else:
-                st.warning("Could not understand. Please try again or type your response.")
+                warn_box = st.empty() # Create an empty container
+                warn_box.warning("Could not understand the audio. Please try speaking again or typing.")
+                time.sleep(3) # Wait 3 seconds
+                warn_box.empty()
+                # st.warning("Could not understand the audio. Please try speaking again or typing.")
                 user_input = None
         
         if user_input:
@@ -409,13 +369,9 @@ def interview_page():
                 ss.current_context = user_input
                 ss.last_user_response = user_input
                 
-                # Check for follow-up
                 if ss.follow_up_count < 2:
                     with st.spinner("Agent is thinking..."):
-                        follow_up = conv.generate_follow_up(
-                            ss.base_questions[ss.current_question_index],
-                            user_input
-                        )
+                        follow_up = conv.generate_follow_up(ss.base_questions[ss.current_question_index], user_input)
                     
                     if "NONE" not in follow_up.upper():
                         ss.chat_history.append({"role": "agent", "content": follow_up})
@@ -426,7 +382,6 @@ def interview_page():
                         st.rerun()
                         return
                 
-                # No follow-up needed → store and move on
                 current_q = ss.base_questions[ss.current_question_index]
                 ss.interview_data[current_q] = {
                     "primary_response": user_input,
@@ -437,18 +392,13 @@ def interview_page():
                 st.rerun()
                 
             elif ss.phase == "follow_up":
-                # Record the follow-up answer
                 if ss.follow_ups:
                     ss.follow_ups[-1]["user_answer"] = user_input
                 ss.last_user_response = user_input
                 
-                # Check for another follow-up
                 if ss.follow_up_count < 2:
                     with st.spinner("Agent is thinking..."):
-                        follow_up = conv.generate_follow_up(
-                            ss.base_questions[ss.current_question_index],
-                            user_input
-                        )
+                        follow_up = conv.generate_follow_up(ss.base_questions[ss.current_question_index], user_input)
                     
                     if "NONE" not in follow_up.upper():
                         ss.chat_history.append({"role": "agent", "content": follow_up})
@@ -458,7 +408,6 @@ def interview_page():
                         st.rerun()
                         return
                 
-                # Done with follow-ups → store and move on
                 current_q = ss.base_questions[ss.current_question_index]
                 ss.interview_data[current_q] = {
                     "primary_response": ss.current_context,
@@ -468,10 +417,6 @@ def interview_page():
                 ss.phase = "ask_question"
                 st.rerun()
 
-
-# ═══════════════════════════════════════════
-#           SUMMARY PAGE
-# ═══════════════════════════════════════════
 def show_summary_page():
     ss = st.session_state
     
@@ -512,7 +457,6 @@ def show_summary_page():
         
         st.markdown('</div>', unsafe_allow_html=True)
     
-    # Download buttons
     col1, col2 = st.columns(2)
     json_dir = os.path.join(os.path.dirname(__file__), "Json")
     
@@ -546,10 +490,6 @@ def show_summary_page():
             del st.session_state[key]
         st.rerun()
 
-
-# ═══════════════════════════════════════════
-#              ROUTER
-# ═══════════════════════════════════════════
 if st.session_state.page == "landing":
     landing_page()
 elif st.session_state.page == "interview":

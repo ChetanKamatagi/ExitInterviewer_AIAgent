@@ -1,7 +1,8 @@
-python-dotenv
 groq
 gtts
-pyaudio
 pygame
-speechrecognition
+pyaudio
 streamlit
+python-dotenv
+speechrecognition
+audio-recorder-streamlit
