@@ -29,12 +29,13 @@ CRITICAL RULES:
 
 FOLLOW_UP_PROMPT = """You are an HR Exit Interviewer. 
 Original Question: "{current_question}"
-Employee's Answer: "{current_context}"
+Discussion so far on this topic:
+{current_context}
 
-Task: Determine if a follow-up is ABSOLUTELY necessary.
+Task: Determine if a follow-up is necessary based on the conversation history.
 CRITICAL RULES:
-1. DEFAULT TO NONE: Your primary goal is to accept the answer and move on. If the answer provides any valid reason or makes basic sense (e.g., "better pay", "it was good", "I learned a lot"), output EXACTLY the word "NONE". Do NOT dig for deeper specifics.
-2. ONLY ASK IF BROKEN: Ask ONE brief follow-up ONLY if the employee's answer is completely unrelated, incomprehensible, or cuts off mid-sentence.
+1. DIG DEEPER IF NEEDED: Ask ONE brief follow-up question if the employee mentions issues (e.g. manager, toxicity, workload) but hasn't fully elaborated, or if their answer is vague or incomplete. Be conversational, natural, and directly reference what they just said. Do not ask for information they have already provided.
+2. DEFAULT TO NONE IF SATISFIED: If the employee has provided enough detail or reason, output EXACTLY the word "NONE". Do NOT ask repetitive questions.
 3. STRICT FORMAT: Output ONLY the follow-up question or the word "NONE". No reasoning, no filler text, and no preambles."""
 
 REPEAT_CHECK_PROMPT = """The user just said: "{user_input}"
@@ -118,11 +119,18 @@ class GroqConversationService:
         except Exception:
             return current_question
 
-    def generate_follow_up(self, current_question, current_context):
+    def generate_follow_up(self, current_question, current_context, follow_ups=None):
         try:
+            context_str = f"Employee's Initial Answer: {current_context}\n"
+            if follow_ups:
+                for i, fu in enumerate(follow_ups):
+                    context_str += f"Follow-up {i+1} Question: {fu['ai_question']}\n"
+                    if fu.get('user_answer'):
+                        context_str += f"Employee's Answer: {fu['user_answer']}\n"
+
             follow_up_prompt = FOLLOW_UP_PROMPT.format(
                 current_question=current_question,
-                current_context=current_context
+                current_context=context_str
             )
             
             return self._generate_with_fallback(
