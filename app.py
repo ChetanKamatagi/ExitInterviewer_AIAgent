@@ -371,7 +371,7 @@ def interview_page():
                 
                 if ss.follow_up_count < 2:
                     with st.spinner("Agent is thinking..."):
-                        follow_up = conv.generate_follow_up(ss.base_questions[ss.current_question_index], user_input)
+                        follow_up = conv.generate_follow_up(ss.base_questions[ss.current_question_index], ss.current_context, ss.follow_ups)
                     
                     if "NONE" not in follow_up.upper():
                         ss.chat_history.append({"role": "agent", "content": follow_up})
@@ -398,7 +398,7 @@ def interview_page():
                 
                 if ss.follow_up_count < 2:
                     with st.spinner("Agent is thinking..."):
-                        follow_up = conv.generate_follow_up(ss.base_questions[ss.current_question_index], user_input)
+                        follow_up = conv.generate_follow_up(ss.base_questions[ss.current_question_index], ss.current_context, ss.follow_ups)
                     
                     if "NONE" not in follow_up.upper():
                         ss.chat_history.append({"role": "agent", "content": follow_up})
